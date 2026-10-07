@@ -74,3 +74,74 @@ body {
   50% { opacity: 1; }
 }
 .animate-pulse-ring { animation: pulse-ring 2s ease-in-out infinite; }
+
+/* ========================================================
+   Unity / IDE Engine Dockview Theme Customization
+   ======================================================== */
+.dockview-theme-unity {
+  --dv-drag-over-background-color: rgba(168, 85, 247, 0.22);
+  --dv-drag-over-border-color: #a855f7;
+  --dv-activegroup-visiblepanel-tab-background-color: #1e1b2e;
+  --dv-activegroup-hiddenpanel-tab-background-color: #13111c;
+  --dv-inactivegroup-visiblepanel-tab-background-color: #161424;
+  --dv-inactivegroup-hiddenpanel-tab-background-color: #100f18;
+  --dv-tab-divider-color: rgba(255, 255, 255, 0.06);
+  --dv-separator-border: rgba(255, 255, 255, 0.08);
+  --dv-background-color: #0b0a12;
+  --dv-group-view-background-color: #100f18;
+  --dv-tabs-and-actions-container-background-color: #0e0d16;
+  --dv-activegroup-visiblepanel-tab-color: #f1f0f7;
+  --dv-activegroup-hiddenpanel-tab-color: #8b88a0;
+  --dv-inactivegroup-visiblepanel-tab-color: #c4c2d4;
+  --dv-inactivegroup-hiddenpanel-tab-color: #68657d;
+  --dv-icon-hover-background-color: rgba(255, 255, 255, 0.08);
+}
+
+.dockview-theme-unity .dv-tabs-and-actions-container {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  height: 34px !important;
+  min-height: 34px !important;
+}
+
+.dockview-theme-unity .dv-tab {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0 14px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.dockview-theme-unity .dv-tab.dv-active-tab {
+  border-bottom: 2px solid #a855f7;
+}
+
+.dockview-theme-unity .dv-tab:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Splitter / Sashes (เส้นแบ่งพาเนลแบบ Game Engine) */
+.dockview-theme-unity .dv-sash {
+  transition: background-color 0.2s ease;
+}
+
+.dockview-theme-unity .dv-sash:hover,
+.dockview-theme-unity .dv-sash.dv-sash-dragging {
+  background-color: #a855f7 !important;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
+}
+
+/* Drop target indicator (ไฮไลต์ตอนลากพาเนลไปจ่อ) */
+.dockview-theme-unity .dv-drop-target {
+  background-color: rgba(168, 85, 247, 0.25) !important;
+  border: 2px dashed #a855f7 !important;
+  border-radius: 8px;
+}
+
+/* แผง Panel Body เต็มความสูง */
+.dockview-theme-unity .dv-content-container {
+  background-color: #0d0c14;
+  overflow: hidden;
+}
+

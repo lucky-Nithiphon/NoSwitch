@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 
 type Mode = 'focus' | 'break' | 'custom'
 const modes: { key: Mode; label: string }[] = [
@@ -172,5 +172,21 @@ if (import.meta.client && 'Notification' in window && Notification.permission ==
   window.addEventListener('click', () => Notification.requestPermission(), { once: true })
 }
 
-onBeforeUnmount(() => clearInterval(interval))
+// อัปเดต Title ของเบราว์เซอร์ให้เห็นเวลานับถอยหลังแม้สลับแท็บ
+watch([running, display], ([isRun, timeStr]) => {
+  if (import.meta.client) {
+    if (isRun) {
+      document.title = `(${timeStr}) NoSwitch • ${mode.value === 'break' ? 'พักผ่อน ☕' : 'โฟกัส 📖'}`
+    } else {
+      document.title = 'NoSwitch — All-in-One Study Dashboard'
+    }
+  }
+})
+
+onBeforeUnmount(() => {
+  clearInterval(interval)
+  if (import.meta.client) {
+    document.title = 'NoSwitch — All-in-One Study Dashboard'
+  }
+})
 </script>

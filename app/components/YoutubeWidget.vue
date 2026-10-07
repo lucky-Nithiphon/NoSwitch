@@ -18,6 +18,23 @@
       </form>
       <p v-if="error" class="-mt-1 text-xs text-rose-400">{{ error }}</p>
 
+      <!-- Quick Study Presets (กดเปลี่ยนบรรยากาศในคลิกเดียว) -->
+      <div class="flex items-center gap-1.5 overflow-x-auto scroll-thin pb-0.5 text-[11px]">
+        <span class="text-ink-500 shrink-0 text-[10px]">เพลย์ลิสต์:</span>
+        <button
+          v-for="p in studyPresets"
+          :key="p.id"
+          type="button"
+          class="shrink-0 rounded-lg border px-2 py-0.5 text-xs transition cursor-pointer"
+          :class="videoId === p.id
+            ? 'border-accent/50 bg-accent/20 text-accent font-medium shadow-sm'
+            : 'border-white/[0.06] bg-white/[0.03] text-ink-400 hover:border-white/10 hover:text-ink-200'"
+          @click="selectPreset(p.id)"
+        >
+          {{ p.label }}
+        </button>
+      </div>
+
       <div class="relative min-h-[180px] flex-1 overflow-hidden rounded-xl bg-black/40 ring-1 ring-white/5">
         <div v-show="videoId" class="absolute inset-0">
           <div ref="playerEl" class="h-full w-full" />
@@ -72,6 +89,19 @@ const ready = ref(false)
 const isPlaying = ref(false)
 let player: any = null
 let lastVolume = 60
+
+const studyPresets = [
+  { id: 'jfKfPfyJRdk', label: '☕ Lofi Girl' },
+  { id: '5qap5aO4i9A', label: '🌧️ Lofi Rain' },
+  { id: '4xDzrJKXOOY', label: '🎹 Piano Study' },
+  { id: 'lTRiuFIWV54', label: '☕ Cafe Jazz' },
+]
+
+function selectPreset(id: string) {
+  error.value = ''
+  videoId.value = id
+  createPlayer(id)
+}
 
 function parseVideoId(text: string): string | null {
   const s = text.trim()

@@ -8,7 +8,10 @@ export default defineNuxtConfig({
   // Dashboard ใช้ LocalStorage ทั้งหมด จึงรันแบบ SPA (ไม่ต้อง SSR)
   ssr: false,
 
-  css: ['~/assets/css/main.css'],
+  css: [
+    'dockview-vue/dist/styles/dockview.css',
+    '~/assets/css/main.css',
+  ],
 
   vite: {
     plugins: [tailwindcss()],
