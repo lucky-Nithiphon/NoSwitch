@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Noto Sans Thai", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ink-950: hsl(228 22% 7%);
+  --color-ink-900: hsl(228 20% 10%);
+  --color-ink-800: hsl(228 16% 15%);
+  --color-ink-700: hsl(228 12% 22%);
+  --color-ink-500: hsl(228 8% 50%);
+  --color-ink-300: hsl(228 10% 75%);
+
+  --color-accent: hsl(258 90% 72%);
+  --color-accent-2: hsl(190 85% 60%);
+  --color-rest: hsl(152 60% 55%);
+}
+
+html, body {
+  @apply bg-ink-950 text-ink-300 font-sans antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(60rem 40rem at 10% -10%, hsl(258 80% 40% / 0.18), transparent 60%),
+    radial-gradient(50rem 40rem at 110% 110%, hsl(190 80% 40% / 0.14), transparent 60%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Glass card ใช้กับทุก Widget */
+.widget {
+  @apply relative flex flex-col rounded-2xl border border-white/[0.06] bg-ink-900/70 backdrop-blur-xl
+         shadow-[0_8px_30px_rgb(0_0_0/0.35)] transition-all duration-300 overflow-hidden;
+}
+.widget:hover {
+  @apply border-white/[0.12] shadow-[0_10px_40px_hsl(258_90%_60%/0.12)];
+}
+.widget-header {
+  @apply flex items-center justify-between gap-2 px-5 pt-4 pb-3 text-sm font-semibold text-white/90;
+}
+.widget-body {
+  @apply flex-1 min-h-0 px-5 pb-5;
+}
+
+.input {
+  @apply w-full rounded-xl border border-white/[0.08] bg-ink-800/80 px-3.5 py-2.5 text-sm text-white
+         placeholder:text-ink-500 outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium
+         transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer;
+}
+.btn-primary {
+  @apply bg-gradient-to-br from-accent to-[hsl(258_80%_60%)] text-white shadow-lg shadow-accent/20 hover:brightness-110;
+}
+.btn-ghost {
+  @apply bg-white/[0.04] text-ink-300 border border-white/[0.06] hover:bg-white/[0.08] hover:text-white;
+}
+
+.scroll-thin::-webkit-scrollbar { width: 6px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: hsl(228 10% 30%); border-radius: 9999px; }
+.scroll-thin::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.5s cubic-bezier(.2,.8,.2,1) both; }
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: .55; }
+  50% { opacity: 1; }
+}
+.animate-pulse-ring { animation: pulse-ring 2s ease-in-out infinite; }
