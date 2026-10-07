@@ -2,7 +2,7 @@
   <div class="flex h-full w-full flex-col justify-between p-3.5 gap-2 text-ink-300 select-none">
     <!-- TOP TOOLBAR: Minimalist & Clean Apple-style Bar -->
     <div class="flex items-center justify-between border-b border-white/[0.08] pb-2.5 shrink-0">
-      <!-- Left: Segmented Switch (Pomodoro / นาฬิกาจริง) -->
+      <!-- Left: Segmented Switch (Timer / Clock) -->
       <div class="inline-flex rounded-xl bg-ink-800/80 p-0.5 text-xs border border-white/[0.06] shadow-inner">
         <button
           type="button"
@@ -79,6 +79,26 @@
         >
           {{ p.label }}
         </button>
+
+        <!-- Touch Quick Steppers (-5m / +5m) -->
+        <div class="flex items-center gap-1 border-l border-white/[0.08] pl-1.5 ml-0.5">
+          <button
+            type="button"
+            class="shrink-0 rounded-md bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-ink-400 hover:bg-white/[0.08] hover:text-white transition cursor-pointer active:scale-95"
+            title="ลด 5 นาที"
+            @click="stepMinutes(-5)"
+          >
+            -5m
+          </button>
+          <button
+            type="button"
+            class="shrink-0 rounded-md bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-ink-400 hover:bg-white/[0.08] hover:text-white transition cursor-pointer active:scale-95"
+            title="เพิ่ม 5 นาที"
+            @click="stepMinutes(5)"
+          >
+            +5m
+          </button>
+        </div>
       </div>
 
       <!-- Toggle View: Wheel vs Clock Face (เมื่อไม่ได้นับถอยหลัง) -->
@@ -117,11 +137,11 @@
     <div class="relative flex flex-1 w-full min-h-[150px] items-center justify-center overflow-hidden">
 
       <!-- ============================================== -->
-      <!-- VIEW 1: iOS DRUM WHEEL PICKER (เมื่ออยู่ในโหมดตั้งเวลา) -->
+      <!-- VIEW 1: iOS DRUM WHEEL PICKER (Touch & Wheel Enabled) -->
       <!-- ============================================== -->
       <div
         v-if="clockType === 'pomodoro' && viewMode === 'picker' && !running"
-        class="relative flex w-full max-w-[280px] h-[150px] items-center justify-center select-none"
+        class="relative flex w-full max-w-[280px] h-[155px] items-center justify-center select-none"
       >
         <!-- Center Translucent Highlight Lens -->
         <div class="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 rounded-xl bg-white/[0.08] border border-white/[0.06] shadow-inner" />
@@ -130,63 +150,90 @@
         <div
           class="ios-wheel-column"
           @wheel.prevent="onWheel('hours', $event)"
+          @touchstart="onTouchStart('hours', $event)"
+          @touchmove.prevent="onTouchMove('hours', $event)"
+          @touchend="onTouchEnd"
+          @mousedown="onMouseDown('hours', $event)"
         >
+          <!-- Up Arrow -->
+          <button type="button" class="ios-tap-stepper" aria-label="เพิ่มชั่วโมง" @click.stop="stepUnit('hours', 1)">▲</button>
+
           <div
-            v-for="offset in [-2, -1, 0, 1, 2]"
+            v-for="offset in [-1, 0, 1]"
             :key="`h-${offset}`"
             class="ios-wheel-item"
             :class="{
               'ios-wheel-active': offset === 0,
-              'ios-wheel-faint': Math.abs(offset) === 2,
               'ios-wheel-sub': Math.abs(offset) === 1
             }"
-            @click="stepUnit('hours', offset)"
+            @click.stop="stepUnit('hours', offset)"
           >
             <span class="font-mono">{{ getWheelValue('hours', offset) }}</span>
             <span v-if="offset === 0" class="text-[11px] text-ink-400 font-sans font-normal ml-1">hours</span>
           </div>
+
+          <!-- Down Arrow -->
+          <button type="button" class="ios-tap-stepper" aria-label="ลดชั่วโมง" @click.stop="stepUnit('hours', -1)">▼</button>
         </div>
 
         <!-- Wheel Column: MINUTES -->
         <div
           class="ios-wheel-column"
           @wheel.prevent="onWheel('minutes', $event)"
+          @touchstart="onTouchStart('minutes', $event)"
+          @touchmove.prevent="onTouchMove('minutes', $event)"
+          @touchend="onTouchEnd"
+          @mousedown="onMouseDown('minutes', $event)"
         >
+          <!-- Up Arrow -->
+          <button type="button" class="ios-tap-stepper" aria-label="เพิ่มนาที" @click.stop="stepUnit('minutes', 1)">▲</button>
+
           <div
-            v-for="offset in [-2, -1, 0, 1, 2]"
+            v-for="offset in [-1, 0, 1]"
             :key="`m-${offset}`"
             class="ios-wheel-item"
             :class="{
               'ios-wheel-active': offset === 0,
-              'ios-wheel-faint': Math.abs(offset) === 2,
               'ios-wheel-sub': Math.abs(offset) === 1
             }"
-            @click="stepUnit('minutes', offset)"
+            @click.stop="stepUnit('minutes', offset)"
           >
             <span class="font-mono">{{ getWheelValue('minutes', offset) }}</span>
             <span v-if="offset === 0" class="text-[11px] text-ink-400 font-sans font-normal ml-1">min</span>
           </div>
+
+          <!-- Down Arrow -->
+          <button type="button" class="ios-tap-stepper" aria-label="ลดนาที" @click.stop="stepUnit('minutes', -1)">▼</button>
         </div>
 
         <!-- Wheel Column: SECONDS -->
         <div
           class="ios-wheel-column"
           @wheel.prevent="onWheel('seconds', $event)"
+          @touchstart="onTouchStart('seconds', $event)"
+          @touchmove.prevent="onTouchMove('seconds', $event)"
+          @touchend="onTouchEnd"
+          @mousedown="onMouseDown('seconds', $event)"
         >
+          <!-- Up Arrow -->
+          <button type="button" class="ios-tap-stepper" aria-label="เพิ่มวินาที" @click.stop="stepUnit('seconds', 1)">▲</button>
+
           <div
-            v-for="offset in [-2, -1, 0, 1, 2]"
+            v-for="offset in [-1, 0, 1]"
             :key="`s-${offset}`"
             class="ios-wheel-item"
             :class="{
               'ios-wheel-active': offset === 0,
-              'ios-wheel-faint': Math.abs(offset) === 2,
               'ios-wheel-sub': Math.abs(offset) === 1
             }"
-            @click="stepUnit('seconds', offset)"
+            @click.stop="stepUnit('seconds', offset)"
           >
             <span class="font-mono">{{ getWheelValue('seconds', offset) }}</span>
             <span v-if="offset === 0" class="text-[11px] text-ink-400 font-sans font-normal ml-1">sec</span>
           </div>
+
+          <!-- Down Arrow -->
+          <button type="button" class="ios-tap-stepper" aria-label="ลดวินาที" @click.stop="stepUnit('seconds', -1)">▼</button>
         </div>
       </div>
 
@@ -457,7 +504,68 @@ let endAt = 0
 const nowTime = ref(new Date())
 let clockTicker: ReturnType<typeof setInterval> | undefined
 
-// iOS Wheel Picker Methods
+// Touch & Mouse Drag Tracker for Tablet & Mobile Gestures
+interface DragTracker {
+  unit: 'hours' | 'minutes' | 'seconds'
+  startY: number
+  accumY: number
+}
+let currentDrag: DragTracker | null = null
+
+function onTouchStart(unit: 'hours' | 'minutes' | 'seconds', e: TouchEvent) {
+  if (running.value) return
+  const t = e.touches[0]
+  if (!t) return
+  currentDrag = { unit, startY: t.clientY, accumY: 0 }
+}
+
+function onTouchMove(unit: 'hours' | 'minutes' | 'seconds', e: TouchEvent) {
+  if (!currentDrag || running.value) return
+  const t = e.touches[0]
+  if (!t) return
+  const delta = currentDrag.startY - t.clientY
+  currentDrag.startY = t.clientY
+  currentDrag.accumY += delta
+
+  const STEP_THRESHOLD = 18 // Responsive touch sensitivity
+  if (Math.abs(currentDrag.accumY) >= STEP_THRESHOLD) {
+    const steps = Math.trunc(currentDrag.accumY / STEP_THRESHOLD)
+    stepUnit(currentDrag.unit, steps)
+    currentDrag.accumY -= steps * STEP_THRESHOLD
+  }
+}
+
+function onTouchEnd() {
+  currentDrag = null
+}
+
+function onMouseDown(unit: 'hours' | 'minutes' | 'seconds', e: MouseEvent) {
+  if (running.value) return
+  currentDrag = { unit, startY: e.clientY, accumY: 0 }
+  window.addEventListener('mousemove', onGlobalMouseMove)
+  window.addEventListener('mouseup', onGlobalMouseUp)
+}
+
+function onGlobalMouseMove(e: MouseEvent) {
+  if (!currentDrag || running.value) return
+  const delta = currentDrag.startY - e.clientY
+  currentDrag.startY = e.clientY
+  currentDrag.accumY += delta
+
+  const STEP_THRESHOLD = 20
+  if (Math.abs(currentDrag.accumY) >= STEP_THRESHOLD) {
+    const steps = Math.trunc(currentDrag.accumY / STEP_THRESHOLD)
+    stepUnit(currentDrag.unit, steps)
+    currentDrag.accumY -= steps * STEP_THRESHOLD
+  }
+}
+
+function onGlobalMouseUp() {
+  currentDrag = null
+  window.removeEventListener('mousemove', onGlobalMouseMove)
+  window.removeEventListener('mouseup', onGlobalMouseUp)
+}
+
 function getWheelValue(unit: 'hours' | 'minutes' | 'seconds', offset: number): number {
   if (unit === 'hours') {
     return (selectedHours.value + offset + 24) % 24
@@ -482,6 +590,16 @@ function stepUnit(unit: 'hours' | 'minutes' | 'seconds', delta: number) {
   } else {
     selectedSeconds.value = (selectedSeconds.value + delta + 60) % 60
   }
+  total.value = computeTotalSeconds()
+  remaining.value = total.value
+}
+
+function stepMinutes(delta: number) {
+  if (running.value) return
+  let totalM = (selectedHours.value * 60 + selectedMinutes.value + delta)
+  if (totalM < 1) totalM = 1
+  selectedHours.value = Math.floor(totalM / 60) % 24
+  selectedMinutes.value = totalM % 60
   total.value = computeTotalSeconds()
   remaining.value = total.value
 }
@@ -634,7 +752,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* ========================================================
-   iOS Wheel Picker Drum Styles
+   iOS Wheel Picker Drum Styles with Touch Optimization
    ======================================================== */
 .ios-wheel-column {
   flex: 1;
@@ -644,37 +762,55 @@ onBeforeUnmount(() => {
   justify-content: center;
   height: 100%;
   cursor: pointer;
-  mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%);
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
 }
 
 .ios-wheel-item {
-  height: 28px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease-out;
-  user-select: none;
+  cursor: pointer;
 }
 
 .ios-wheel-active {
   color: #ffffff;
   font-size: 1.25rem;
   font-weight: 700;
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .ios-wheel-sub {
   color: #64748b;
   font-size: 1rem;
   font-weight: 500;
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
-.ios-wheel-faint {
-  color: #334155;
-  font-size: 0.85rem;
-  opacity: 0.3;
+.ios-tap-stepper {
+  width: 100%;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: hsl(228 10% 40%);
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+.ios-tap-stepper:hover,
+.ios-tap-stepper:active {
+  color: #ffffff;
+  transform: scale(1.2);
 }
 
 /* ========================================================
@@ -691,6 +827,7 @@ onBeforeUnmount(() => {
   font-weight: 500;
   transition: all 0.15s ease;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .ios-circular-btn:active {
