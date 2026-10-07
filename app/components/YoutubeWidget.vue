@@ -91,8 +91,8 @@ let player: any = null
 let lastVolume = 60
 
 const studyPresets = [
-  { id: 'jfKfPfyJRdk', label: '☕ Lofi Girl' },
-  { id: '5qap5aO4i9A', label: '🌧️ Lofi Rain' },
+  { id: 'JCKBaJDRMw4', label: '☕ Lofi Girl' },
+  { id: 'A8yjETPcZeA', label: '🌧️ Lofi Rain' },
   { id: '4xDzrJKXOOY', label: '🎹 Piano Study' },
   { id: 'lTRiuFIWV54', label: '☕ Cafe Jazz' },
 ]
