@@ -322,8 +322,8 @@ async function send(customText?: string) {
   try {
     const promptText = `System Instruction: ${SYSTEM_INSTRUCTION}\n\nคำถาม: ${content}`
 
-    // เรียก Gemini API ตรงจาก Client-side (gemini-1.5-flash)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(
+    // เรียก Gemini API ตรงจาก Client-side โดยใช้ Alias โมเดลล่าสุดของ Google
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${encodeURIComponent(
       apiKey.value,
     )}`
 
