@@ -320,10 +320,8 @@ async function send(customText?: string) {
   scrollToBottom()
 
   try {
-    const promptText = `System Instruction: ${SYSTEM_INSTRUCTION}\n\nคำถาม: ${content}`
-
-    // เรียก Gemini API ตรงจาก Client-side โดยใช้ Alias โมเดลล่าสุดของ Google
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${encodeURIComponent(
+    // เรียกโมเดล Gemini Flash Lite ความเร็วสูงพิเศษ (Latency ต่ำ ตอบกลับใน 1-2 วินาที)
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${encodeURIComponent(
       apiKey.value,
     )}`
 
@@ -333,11 +331,18 @@ async function send(customText?: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: SYSTEM_INSTRUCTION }],
+        },
         contents: [
           {
-            parts: [{ text: promptText }],
+            parts: [{ text: content }],
           },
         ],
+        generationConfig: {
+          temperature: 0.6,
+          maxOutputTokens: 1024,
+        },
       }),
     })
 
