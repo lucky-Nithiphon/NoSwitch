@@ -179,8 +179,30 @@
                 ? 'rounded-bl-md border border-rose-500/40 bg-rose-500/15 text-rose-200'
                 : 'rounded-bl-md border border-white/[0.06] bg-ink-800/80 text-ink-300 shadow-sm'"
           >
+            <!-- User Attached Image in Chat Bubble -->
+            <div v-if="m.image" class="mb-2 overflow-hidden rounded-xl bg-black/25">
+              <img
+                :src="m.image"
+                alt="รูปที่แนบ"
+                class="max-h-60 max-w-full rounded-xl object-contain cursor-pointer transition hover:opacity-90"
+                title="คลิกเพื่อดูรูปขนาดเต็ม"
+                @click="previewModalImage = m.image"
+              />
+            </div>
+            <!-- User Attached PDF / Document in Chat Bubble -->
+            <div
+              v-else-if="m.file"
+              class="mb-2 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs border"
+              :class="m.file.kind === 'pdf' ? 'bg-rose-500/15 border-rose-500/30 text-rose-100' : 'bg-cyan-500/15 border-cyan-500/30 text-cyan-100'"
+            >
+              <span class="text-xl shrink-0">{{ m.file.kind === 'pdf' ? '📕' : '📄' }}</span>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold truncate">{{ m.file.name }}</p>
+                <p class="text-[10px] opacity-75">{{ m.file.kind === 'pdf' ? 'เอกสาร PDF' : 'ไฟล์เอกสาร/โค้ด' }} • {{ m.file.sizeStr }}</p>
+              </div>
+            </div>
             <div v-if="m.role === 'assistant'" class="chat-md" v-html="renderMarkdown(m.content)" />
-            <p v-else class="whitespace-pre-wrap break-words">{{ m.content }}</p>
+            <p v-else-if="m.content" class="whitespace-pre-wrap break-words">{{ m.content }}</p>
           </div>
         </div>
 
@@ -193,25 +215,94 @@
         </div>
       </div>
 
+      <!-- Attached File / Image Preview Box (ก่อนกดส่ง) -->
+      <div
+        v-if="attachedFile"
+        class="flex flex-col gap-1.5 rounded-xl border border-accent/30 bg-accent/10 p-2.5 text-xs animate-fade-up"
+      >
+        <div class="flex items-center justify-between">
+          <span class="flex items-center gap-1.5 font-medium text-accent truncate pr-2">
+            <span>{{ attachedFile.kind === 'image' ? '🖼️' : attachedFile.kind === 'pdf' ? '📕' : '📄' }}</span>
+            <span class="truncate">แนบไฟล์แล้ว: {{ attachedFile.name }}</span>
+            <span class="text-[10px] text-ink-400 shrink-0">({{ attachedFile.sizeStr }})</span>
+          </span>
+          <button
+            type="button"
+            class="rounded-md px-1.5 py-0.5 text-ink-400 hover:bg-white/10 hover:text-white cursor-pointer transition shrink-0"
+            title="ยกเลิกไฟล์"
+            @click="clearAttachedFile"
+          >
+            ✕ ลบ
+          </button>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <img
+            v-if="attachedFile.kind === 'image' && attachedFile.previewUrl"
+            :src="attachedFile.previewUrl"
+            alt="Preview"
+            class="h-14 w-14 rounded-lg object-cover ring-1 ring-accent/50 cursor-pointer hover:opacity-90 transition shrink-0"
+            title="คลิกเพื่อดูรูปขนาดเต็ม"
+            @click="previewModalImage = attachedFile.previewUrl"
+          />
+          <div
+            v-else
+            class="grid h-12 w-12 place-items-center rounded-xl bg-ink-800/80 ring-1 ring-white/10 text-2xl shrink-0"
+          >
+            {{ attachedFile.kind === 'pdf' ? '📕' : '📄' }}
+          </div>
+          <div class="flex flex-1 flex-wrap gap-1">
+            <button
+              v-for="qp in quickPromptsForFile"
+              :key="qp"
+              type="button"
+              class="rounded-lg border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-ink-300 hover:border-accent/40 hover:text-white hover:bg-accent/10 transition cursor-pointer"
+              @click="input = qp"
+            >
+              {{ qp }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden File Input (รองรับรูปภาพ, PDF, ไฟล์ข้อความ/โค้ด) -->
+      <input
+        ref="fileInputEl"
+        type="file"
+        accept="image/*,application/pdf,text/plain,.pdf,.txt,.md,.json,.csv,.py,.js"
+        class="hidden"
+        @change="onFileSelected"
+      />
+
       <!-- Chat Input Form -->
-      <form class="flex items-end gap-2 pt-1" @submit.prevent="send()">
+      <form class="flex items-end gap-1.5 pt-1" @submit.prevent="send()">
+        <button
+          id="chat-attach-btn"
+          type="button"
+          class="btn-ghost flex h-[42px] w-[42px] items-center justify-center rounded-xl text-ink-400 hover:bg-white/[0.08] hover:text-white transition shrink-0 cursor-pointer"
+          :class="{ 'text-accent border-accent/40 bg-accent/10 shadow-sm': attachedFile }"
+          title="แนบรูปภาพหรือไฟล์ PDF/ชีทเรียน (หรือกด Ctrl+V ในกล่องพิมพ์)"
+          @click="triggerFileInput"
+        >
+          <span class="text-base">{{ attachedFile?.kind === 'pdf' ? '📕' : attachedFile?.kind === 'text' ? '📄' : '📎' }}</span>
+        </button>
         <textarea
           id="chat-input"
           ref="inputEl"
           v-model="input"
           rows="1"
           class="input scroll-thin max-h-32 resize-none text-sm"
-          placeholder="พิมพ์คำถามที่สงสัย... (Enter ส่ง, Shift+Enter ขึ้นบรรทัด)"
+          :placeholder="attachedFile ? 'ถามเกี่ยวกับไฟล์นี้ หรือกดส่งได้เลย...' : 'พิมพ์คำถาม, แนบไฟล์ PDF/ชีท หรือกด Ctrl+V...'"
           aria-label="ข้อความถึงติวเตอร์ AI"
           :disabled="loading"
           @keydown.enter.exact.prevent="send()"
+          @paste="onPaste"
           @input="autoGrow"
         />
         <button
           id="chat-send-btn"
           type="submit"
           class="btn btn-primary h-[42px] px-4 shrink-0"
-          :disabled="!input.trim() || loading || !apiKey"
+          :disabled="(!input.trim() && !attachedFile) || loading || !apiKey"
           aria-label="ส่งข้อความ"
         >
           <span v-if="loading" class="inline-block animate-spin">⏳</span>
@@ -219,21 +310,55 @@
         </button>
       </form>
     </div>
+
+    <!-- Image Fullscreen Preview Modal -->
+    <div
+      v-if="previewModalImage"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 select-none"
+      @click="previewModalImage = null"
+    >
+      <div class="relative max-h-[90vh] max-w-[90vw] overflow-hidden rounded-2xl bg-ink-900 border border-white/10 p-2 shadow-2xl" @click.stop>
+        <button
+          class="absolute top-3 right-3 grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white hover:bg-rose-500 transition cursor-pointer z-10"
+          title="ปิด"
+          @click="previewModalImage = null"
+        >
+          ✕
+        </button>
+        <img :src="previewModalImage" alt="รูปขยาย" class="max-h-[82vh] max-w-full rounded-xl object-contain" />
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick, onMounted, watch } from 'vue'
 
+interface AttachedFile {
+  name: string
+  kind: 'image' | 'pdf' | 'text'
+  mimeType: string
+  previewUrl?: string // for image thumbnail
+  base64?: string // for inlineData
+  textContent?: string // for text/code files
+  sizeStr: string
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  image?: string // Base64 data URL
+  file?: {
+    name: string
+    kind: 'image' | 'pdf' | 'text'
+    sizeStr: string
+  }
   error?: boolean
 }
 
-// System instruction กำหนดบทบาทติวเตอร์ส่วนตัว
+// System instruction กำหนดบทบาทติวเตอร์ส่วนตัว (รอบคอบ ใจดี ละเอียด)
 const SYSTEM_INSTRUCTION =
-  'คุณคือติวเตอร์ส่วนตัวที่ใจดี อธิบายกระชับ เข้าใจง่าย ตอบเป็นภาษาไทยเป็นหลัก เน้นช่วยสรุปบทเรียนและแก้โจทย์อย่างเป็นขั้นตอน'
+  'คุณคือติวเตอร์ส่วนตัวที่ใจดี อธิบายกระชับ เข้าใจง่าย ตอบเป็นภาษาไทยเป็นหลัก หากผู้ใช้ส่งรูปภาพโจทย์ เอกสาร PDF ชีทเรียน หรือไฟล์ข้อความมา ให้ช่วยอ่าน วิเคราะห์ สรุปเนื้อหา หรือเฉลยโจทย์อย่างเป็นขั้นตอน และอธิบายสูตรหรือแนวคิดสำคัญให้เข้าใจง่าย'
 
 // Sample prompts
 const samplePrompts = [
@@ -248,12 +373,39 @@ const keyInput = ref('')
 const showKeyText = ref(false)
 const showSettings = ref(false)
 
-// State แชท
+// State แชท และ ไฟล์แนบ
 const messages = useLocalStorage<ChatMessage[]>('noswitch:chat:messages', [])
 const input = ref('')
 const loading = ref(false)
 const scrollEl = ref<HTMLElement | null>(null)
 const inputEl = ref<HTMLTextAreaElement | null>(null)
+const fileInputEl = ref<HTMLInputElement | null>(null)
+
+const attachedFile = ref<AttachedFile | null>(null)
+const previewModalImage = ref<string | null>(null)
+
+// Quick prompts ยืดหยุ่นตามประเภทของไฟล์แนบ
+const quickPromptsForFile = computed(() => {
+  if (!attachedFile.value) return samplePrompts
+  if (attachedFile.value.kind === 'pdf') {
+    return [
+      '📑 ช่วยสรุปประเด็นสำคัญของเอกสารนี้',
+      '❓ ตั้งคำถามทดสอบความเข้าใจ 5 ข้อจากไฟล์นี้',
+      '🔍 สรุปหัวข้อย่อยและสาระสำคัญ',
+    ]
+  }
+  if (attachedFile.value.kind === 'text') {
+    return [
+      '📝 ช่วยสรุปเนื้อหาของไฟล์นี้',
+      '💡 อธิบายและวิเคราะห์ใจความสำคัญ',
+    ]
+  }
+  return [
+    '📐 ช่วยเฉลยโจทย์ข้อนี้พร้อมแสดงวิธีทำ',
+    '📝 สรุปเนื้อหาสำคัญจากภาพนี้',
+    '🔍 อธิบายแผนภาพ/กราฟนี้อย่างละเอียด',
+  ]
+})
 
 // ซิงค์ input กับ apiKey ปัจจุบัน
 watch(
@@ -298,9 +450,153 @@ function clearChat() {
   }
 }
 
+/**
+ * บีบอัดและย่อขนาดรูปภาพ (Max 1600px, JPEG 0.85) เพื่อให้ส่งผ่าน API ได้รวดเร็วและประหยัดเน็ต
+ */
+function compressImage(file: File, maxDim = 1600, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        let { width, height } = img
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width)
+            width = maxDim
+          } else {
+            width = Math.round((width * maxDim) / height)
+            height = maxDim
+          }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return resolve(e.target?.result as string)
+        ctx.drawImage(img, 0, 0, width, height)
+        const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+        resolve(canvas.toDataURL(mime, quality))
+      }
+      img.onerror = reject
+      img.src = e.target?.result as string
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const res = reader.result as string
+      const base64 = res.split(',')[1] || ''
+      resolve(base64)
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+function triggerFileInput() {
+  fileInputEl.value?.click()
+}
+
+async function handleUploadedFile(file: File) {
+  const sizeKb = Math.round(file.size / 1024)
+  const sizeStr = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`
+
+  // 1. Image file
+  if (file.type.startsWith('image/')) {
+    try {
+      const dataUrl = await compressImage(file)
+      const base64 = dataUrl.split(',')[1] || ''
+      attachedFile.value = {
+        name: file.name,
+        kind: 'image',
+        mimeType: file.type || 'image/jpeg',
+        previewUrl: dataUrl,
+        base64,
+        sizeStr,
+      }
+      nextTick(scrollToBottom)
+    } catch {
+      alert('ไม่สามารถประมวลผลรูปภาพได้ กรุณาลองใหม่อีกครั้ง')
+    }
+    return
+  }
+
+  // 2. PDF file
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    if (file.size > 20 * 1024 * 1024) {
+      alert('ไฟล์ PDF มีขนาดใหญ่เกิน 20MB กรุณาเลือกไฟล์ที่ขนาดเล็กลง')
+      return
+    }
+    try {
+      const base64 = await readFileAsBase64(file)
+      attachedFile.value = {
+        name: file.name,
+        kind: 'pdf',
+        mimeType: 'application/pdf',
+        base64,
+        sizeStr,
+      }
+      nextTick(scrollToBottom)
+    } catch {
+      alert('ไม่สามารถอ่านไฟล์ PDF ได้')
+    }
+    return
+  }
+
+  // 3. Text or Code file
+  try {
+    const text = await file.text()
+    attachedFile.value = {
+      name: file.name,
+      kind: 'text',
+      mimeType: file.type || 'text/plain',
+      textContent: text.slice(0, 50000), // จำกัดสูงสุด 50k ตัวอักษร
+      sizeStr,
+    }
+    nextTick(scrollToBottom)
+  } catch {
+    alert('ไม่สามารถอ่านไฟล์ข้อความได้')
+  }
+}
+
+function onFileSelected(e: Event) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) handleUploadedFile(file)
+  target.value = ''
+}
+
+function onPaste(e: ClipboardEvent) {
+  const items = e.clipboardData?.items
+  if (!items) return
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) {
+        e.preventDefault()
+        handleUploadedFile(file)
+        break
+      }
+    }
+  }
+}
+
+function clearAttachedFile() {
+  attachedFile.value = null
+}
+
 async function send(customText?: string) {
-  const content = (customText ?? input.value).trim()
-  if (!content || loading.value) return
+  const textPrompt = (customText ?? input.value).trim()
+  const fileToSend = attachedFile.value
+
+  // ถ้าไม่มีทั้งข้อความและไฟล์ ให้ข้าม
+  if ((!textPrompt && !fileToSend) || loading.value) return
 
   if (!apiKey.value) {
     showSettings.value = true
@@ -313,49 +609,145 @@ async function send(customText?: string) {
     return
   }
 
-  messages.value.push({ role: 'user', content })
+  const defaultPrompt = fileToSend?.kind === 'pdf'
+    ? 'ช่วยสรุปเนื้อหาสำคัญและประเด็นหลักของเอกสาร PDF นี้'
+    : fileToSend?.kind === 'text'
+      ? 'ช่วยวิเคราะห์และสรุปเนื้อหาของไฟล์นี้'
+      : 'ช่วยวิเคราะห์ อธิบายเนื้อหา หรือแก้โจทย์ในภาพนี้อย่างละเอียด'
+
+  const finalPrompt = textPrompt || defaultPrompt
+
+  // บันทึกลงใน Chat Log ฝั่งผู้ใช้
+  messages.value.push({
+    role: 'user',
+    content: finalPrompt,
+    image: fileToSend?.kind === 'image' ? fileToSend.previewUrl : undefined,
+    file: fileToSend
+      ? {
+          name: fileToSend.name,
+          kind: fileToSend.kind,
+          sizeStr: fileToSend.sizeStr,
+        }
+      : undefined,
+  })
+
   input.value = ''
+  clearAttachedFile()
   nextTick(autoGrow)
   loading.value = true
   scrollToBottom()
 
   try {
-    // เรียกโมเดล Gemini Flash Lite ความเร็วสูงพิเศษ (Latency ต่ำ ตอบกลับใน 1-2 วินาที)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${encodeURIComponent(
-      apiKey.value,
-    )}`
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: SYSTEM_INSTRUCTION }],
-        },
-        contents: [
-          {
-            parts: [{ text: content }],
+    // เตรียม Multimodal parts สำหรับ Gemini API
+    const parts: any[] = []
+    if (fileToSend) {
+      if (fileToSend.kind === 'pdf') {
+        parts.push({
+          inlineData: {
+            mimeType: 'application/pdf',
+            data: fileToSend.base64,
           },
-        ],
-        generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 1024,
-        },
-      }),
-    })
+        })
+      } else if (fileToSend.kind === 'image') {
+        parts.push({
+          inlineData: {
+            mimeType: fileToSend.mimeType,
+            data: fileToSend.base64,
+          },
+        })
+      } else if (fileToSend.kind === 'text') {
+        parts.push({
+          text: `[เอกสารแนบ: ${fileToSend.name}]\n\n${fileToSend.textContent}\n\n[สิ้นสุดเอกสารแนบ]`,
+        })
+      }
+    }
+    parts.push({ text: finalPrompt })
 
-    const data = await response.json()
+    // รายชื่อโมเดลมาตรฐานที่รองรับทั้งข้อความ, รูปภาพ และ PDF (เรียงลำดับจากเร็วสุดและเสถียรสุดบน v1beta)
+    const candidateModels = [
+      'gemini-flash-latest',
+      'gemini-1.5-flash-latest',
+      'gemini-flash-lite-latest',
+      'gemini-2.0-flash-exp',
+      'gemini-1.5-flash-8b',
+      'gemini-pro-latest',
+    ]
 
-    if (!response.ok) {
-      const errDetail = data?.error?.message || `HTTP ${response.status}: ${response.statusText}`
-      throw new Error(errDetail)
+    let reply = ''
+    let lastError: any = null
+
+    for (const modelName of candidateModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(
+          apiKey.value,
+        )}`
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: SYSTEM_INSTRUCTION }],
+            },
+            contents: [
+              {
+                parts,
+              },
+            ],
+            generationConfig: {
+              temperature: 0.6,
+              maxOutputTokens: 2048,
+            },
+          }),
+        })
+
+        const data = await response.json()
+
+        if (response.ok && data?.candidates?.[0]?.content?.parts) {
+          reply = data.candidates[0].content.parts.map((p: any) => p.text || '').join('')
+          break // สำเร็จ! ใช้งานโมเดลนี้ได้ทันที
+        }
+
+        const errMsg = data?.error?.message || ''
+        const isTemporary =
+          response.status === 404 ||
+          response.status === 429 ||
+          response.status === 503 ||
+          errMsg.includes('high demand') ||
+          errMsg.includes('overloaded') ||
+          errMsg.includes('spikes in demand') ||
+          errMsg.includes('not found')
+
+        if (isTemporary) {
+          lastError = new Error(errMsg || `Model ${modelName} temporary issue (${response.status})`)
+          continue // สลับไปลองโมเดลถัดไปในคลัสเตอร์ทันที
+        }
+
+        // หากเป็น Error ถาวร (เช่น API Key ผิด) ให้โยน Error ออกไปแสดงผลทันที
+        throw new Error(errMsg || `HTTP ${response.status}: ${response.statusText}`)
+      } catch (err: any) {
+        if (
+          err.message &&
+          (err.message.includes('high demand') ||
+            err.message.includes('spikes in demand') ||
+            err.message.includes('not found') ||
+            err.message.includes('overloaded') ||
+            err.message.includes('404') ||
+            err.message.includes('503') ||
+            err.message.includes('429'))
+        ) {
+          lastError = err
+          continue
+        }
+        throw err
+      }
     }
 
-    const reply =
-      data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || '').join('') ||
-      'ขออภัย ไม่พบคำตอบจากติวเตอร์ ลองถามใหม่อีกครั้งนะครับ'
+    if (!reply) {
+      throw lastError || new Error('เซิร์ฟเวอร์ Google มีผู้ใช้งานหนาแน่นชั่วคราว กรุณารอสักครู่แล้วลองใหม่อีกครั้ง')
+    }
 
     messages.value.push({ role: 'assistant', content: reply })
   } catch (err: any) {
@@ -366,6 +758,8 @@ async function send(customText?: string) {
       errMsg = 'API Key ไม่ถูกต้อง กรุณาตรวจสอบหรือขอ Key ใหม่ที่ Google AI Studio'
     } else if (errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('Quota')) {
       errMsg = 'โควตาการใช้งานของ API Key เต็มชั่วคราว กรุณารอสักครู่แล้วลองใหม่'
+    } else if (errMsg.includes('high demand') || errMsg.includes('spikes in demand') || errMsg.includes('503')) {
+      errMsg = 'เซิร์ฟเวอร์ Google มีผู้ใช้งานหนาแน่นชั่วคราว กรุณากดลองใหม่อีกครั้ง'
     } else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) {
       errMsg = 'ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้ กรุณาตรวจสอบเครือข่ายของคุณ'
     }

@@ -19,7 +19,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'NoSwitch — Study Dashboard',
+      title: 'NoSwitch v.0.1.2 — Study Dashboard',
       htmlAttrs: { lang: 'th' },
       meta: [
         { name: 'description', content: 'All-in-One Study Hub: YouTube, AI Chat, Pomodoro, Calculator และ To-do ในหน้าเดียว ลดการสลับแอป' },
