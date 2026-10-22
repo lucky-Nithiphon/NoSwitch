@@ -20,7 +20,9 @@ const MAX_CHARS = 8000
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
   const apiKey = config.aiApiKey || process.env.AI_API_KEY
-  const model = config.aiModel || process.env.AI_MODEL || 'gemini-flash-latest'
+  const body = await readBody<{ messages?: ChatMessage[]; model?: string }>(event)
+  const messages = Array.isArray(body?.messages) ? body.messages : []
+  const model = body?.model || config.aiModel || process.env.AI_MODEL || 'gemini-flash-latest'
 
   if (!apiKey) {
     throw createError({
@@ -29,9 +31,6 @@ export default defineEventHandler(async (event) => {
       data: { message: 'ยังไม่ได้ตั้งค่า AI_API_KEY ในไฟล์ .env ฝั่ง Server (สร้างไฟล์ .env แล้วรัน npm run dev ใหม่)' },
     })
   }
-
-  const body = await readBody<{ messages?: ChatMessage[] }>(event)
-  const messages = Array.isArray(body?.messages) ? body.messages : []
 
   // Validate + จำกัดขนาด context
   const history = messages

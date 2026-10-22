@@ -23,8 +23,13 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'th' },
       meta: [
         { name: 'description', content: 'All-in-One Study Hub: YouTube, AI Chat, Pomodoro, Calculator และ To-do ในหน้าเดียว ลดการสลับแอป' },
+        { property: 'og:title', content: 'NoSwitch — All-in-One AI Study Dashboard' },
+        { property: 'og:description', content: 'รวมศูนย์การเรียนรู้ YouTube, AI ติวเตอร์, นาฬิกา Pomodoro, เอกสาร PDF และ AI ตรวจจับสมาธิในหน้าเดียว' },
+        { property: 'og:image', content: '/Logo.png' },
+        { name: 'theme-color', content: '#090d16' },
       ],
       link: [
+        { rel: 'icon', type: 'image/png', href: '/Logo.png' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap' },
       ],

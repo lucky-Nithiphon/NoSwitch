@@ -80,7 +80,8 @@ declare global {
   }
 }
 
-const videoId = useLocalStorage<string>('noswitch:yt:videoId', '')
+const DEFAULT_VIDEO_ID = 'jfKfPfyJRdk'
+const videoId = useLocalStorage<string>('noswitch:yt:videoId', DEFAULT_VIDEO_ID)
 const volume = useLocalStorage<number>('noswitch:yt:volume', 60)
 const input = ref('')
 const error = ref('')
@@ -91,7 +92,7 @@ let player: any = null
 let lastVolume = 60
 
 const studyPresets = [
-  { id: 'JCKBaJDRMw4', label: '☕ Lofi Girl' },
+  { id: 'jfKfPfyJRdk', label: '☕ Lofi Girl' },
   { id: 'A8yjETPcZeA', label: '🌧️ Lofi Rain' },
   { id: '4xDzrJKXOOY', label: '🎹 Piano Study' },
   { id: 'lTRiuFIWV54', label: '☕ Cafe Jazz' },
@@ -178,7 +179,8 @@ function toggleMute() {
 watch(volume, (v) => { if (ready.value) player?.setVolume(v) })
 
 onMounted(() => {
-  if (videoId.value) createPlayer(videoId.value)
+  if (!videoId.value) videoId.value = DEFAULT_VIDEO_ID
+  createPlayer(videoId.value)
 })
 
 onBeforeUnmount(() => {

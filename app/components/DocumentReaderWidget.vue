@@ -48,6 +48,21 @@
 
       <!-- Right: Split View Mode Switcher -->
       <div class="flex items-center gap-1 shrink-0">
+        <!-- AI Sync Indicator Badge -->
+        <button
+          v-if="activeDocument"
+          type="button"
+          class="hidden sm:inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] transition cursor-pointer"
+          :class="isAiSyncEnabled
+            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
+            : 'border-white/10 bg-white/5 text-ink-400 hover:bg-white/10 hover:text-ink-200'"
+          :title="isAiSyncEnabled ? 'AI กำลังซิงก์กับเอกสารนี้ (คลิกเพื่อปิดซิงก์)' : 'ปิดการซิงก์กับ AI ชั่วคราว (คลิกเพื่อเปิด)'"
+          @click="toggleAiSync"
+        >
+          <span class="h-1.5 w-1.5 rounded-full" :class="isAiSyncEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-ink-500'" />
+          <span>{{ isAiSyncEnabled ? 'ซิงก์กับ AI แล้ว' : 'ปิดซิงก์ AI' }}</span>
+        </button>
+
         <!-- Split View Toggle Button (เปิดดูเทียบ 2 ฝั่ง ซ้าย-ขวา) -->
         <button
           v-if="documents.length >= 2"
@@ -142,7 +157,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount, h } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, h } from 'vue'
+import { useActiveDocument } from '~/composables/useActiveDocument'
 
 interface DocFile {
   id: string
@@ -150,8 +166,11 @@ interface DocFile {
   size: string
   type: 'pdf' | 'text' | 'image'
   url: string
+  base64?: string
   text?: string
 }
+
+const { setActiveDoc: setSharedActiveDoc, isAiSyncEnabled, toggleAiSync } = useActiveDocument()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const documents = ref<DocFile[]>([])
@@ -165,6 +184,22 @@ const splitRightId = ref<string | null>(null)
 const activeDocument = computed(() => {
   return documents.value.find((d) => d.id === activeDocId.value) || documents.value[0] || null
 })
+
+// ซิงก์เอกสารที่เปิดอยู่ไปยัง useActiveDocument เพื่อให้ AI Chat เข้าถึงได้ทันที
+watch(activeDocument, (doc) => {
+  if (doc) {
+    setSharedActiveDoc({
+      id: doc.id,
+      name: doc.name,
+      type: doc.type,
+      size: doc.size,
+      base64: doc.base64,
+      text: doc.text,
+    })
+  } else {
+    setSharedActiveDoc(null)
+  }
+}, { immediate: true, deep: true })
 
 const splitLeftDoc = computed(() => {
   return documents.value.find((d) => d.id === splitLeftId.value) || documents.value[0] || null
@@ -186,7 +221,20 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function processFile(file: File) {
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const res = reader.result as string
+      const base64 = res.split(',')[1] || ''
+      resolve(base64)
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+async function processFile(file: File) {
   const id = crypto.randomUUID()
   const name = file.name
   const size = formatBytes(file.size)
@@ -197,11 +245,21 @@ function processFile(file: File) {
   if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
     type = 'pdf'
     url = URL.createObjectURL(file)
-    addDocToList({ id, name, size, type, url })
+    try {
+      const base64 = await readFileAsBase64(file)
+      addDocToList({ id, name, size, type, url, base64 })
+    } catch {
+      addDocToList({ id, name, size, type, url })
+    }
   } else if (file.type.startsWith('image/')) {
     type = 'image'
     url = URL.createObjectURL(file)
-    addDocToList({ id, name, size, type, url })
+    try {
+      const base64 = await readFileAsBase64(file)
+      addDocToList({ id, name, size, type, url, base64 })
+    } catch {
+      addDocToList({ id, name, size, type, url })
+    }
   } else {
     // Text / Notes
     type = 'text'
